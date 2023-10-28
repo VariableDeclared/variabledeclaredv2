@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -73,6 +74,21 @@ func OpenConnection() (*sql.DB, string) {
 }
 
 func GetEmail() string {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	key, ok := os.LookupEnv("NAMESPACE_DOMAIN")
+	if !ok {
+		log.Fatal("Error loading env variables (namespace domain)")
+	}
+
+	_, token := Middleware()
+
+	email := token[key].(string)
+
+	return email
 }
 
 var GetList = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -122,7 +138,7 @@ var AddTask = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	}
 
 	db, userId := OpenConnection()
-	defer db.close()
+	defer db.Close()
 
 	sqlStatement := `INSERT INTO tasks (task, status user_uuid) VALUES ($1, $2, $3) RETURNING id, task, status;`
 
@@ -192,4 +208,76 @@ var DeleteTask = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+})
+
+var EditTask = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	vars := mux.Vars(r)
+	number, err := strconv.Atoi((vars["id"]))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		panic(err)
+	}
+
+	sqlStatement := `UPDATE tasks SET task = $2 WHERE id = $1 AND user_uuid = $1 RETURNING id, task, status;`
+
+	var newTask Item
+
+	err = json.NewDecoder(r.Body).Decode(&newTask)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		panic(err)
+	}
+
+	db, userId := OpenConnection()
+	defer db.Close()
+
+	var updatedTask Item
+	err = db.QueryRow(sqlStatement, number, newTask.Task, userId).Scan(&updatedTask.TaskNum, &updatedTask.Task, &updatedTask.Status)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		panic(err)
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	_ = json.NewEncoder(w).Encode(updatedTask)
+})
+
+var DoneTask = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	vars := mux.Vars(r)
+	number, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		panic(err)
+	}
+
+	var currStatus bool
+
+	var updatedTask Item
+
+	sqlStatement1 := `SELECT status FROM tasks WHERE id = $1 AND user_uuid = $2;`
+	sqlStatement2 := `UPDATE tasks set status = $2 WHERE id = $1 AND user_uuid = $3 RETURNING id, task, status;`
+
+	db, userId := OpenConnection()
+	defer db.Close()
+
+	err = db.QueryRow(sqlStatement1, number, userId).Scan(&currStatus)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		panic(err)
+	}
+
+	err = db.QueryRow(sqlStatement2, number, !currStatus, userId).Scan(&updatedTask.TaskNum, &updatedTask.Task, &updatedTask.Status)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		panic(err)
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	_ = json.NewEncoder(w).Encode(updatedTask)
 })
