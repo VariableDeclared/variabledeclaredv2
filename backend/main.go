@@ -18,6 +18,7 @@ func main() {
 	r := mux.NewRouter()
 
 	r.Handle("/list", jwtMiddleware.Handler(backend.GetList)).Methods("GET")
+	r.Handle("/posts", backend.GetBlogPosts).Methods("GET")
 	r.Handle("/list/add", jwtMiddleware.Handler(backend.AddTask)).Methods("POST")
 	r.Handle("/list/delete/{id}", jwtMiddleware.Handler(backend.DeleteTask)).Methods("DELETE")
 	r.Handle("/list/edit/{id}", jwtMiddleware.Handler(backend.EditTask)).Methods("PUT")

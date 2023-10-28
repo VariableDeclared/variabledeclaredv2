@@ -25,10 +25,16 @@ type Item struct {
 	Status  bool   `json:"status"`
 }
 
+type BlogPost struct {
+	Content string `json:"content"`
+	Title   string `json:"title"`
+	Date    string `json:"date"`
+}
+
 func OpenConnection() (*sql.DB, string) {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loging .env file")
+		log.Fatal("Error loading .env file")
 	}
 
 	user, ok := os.LookupEnv("USER")
@@ -55,22 +61,22 @@ func OpenConnection() (*sql.DB, string) {
 	if err != nil {
 		panic(err)
 	}
+	// lets implement auth later...
+	// email := GetEmail()
+	// addEmail := `INSERT INTO users (email) VALUES ($1) ON CONFLICT (email) DO NOTHING;`
+	// _, err = db.Exec(addEmail, email)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	email := GetEmail()
-	addEmail := `INSERT INTO users (email) VALUES ($1) ON CONFLICT (email) DO NOTHING;`
-	_, err = db.Exec(addEmail, email)
-	if err != nil {
-		panic(err)
-	}
+	// var userId string
+	// getUser := `SELECT user_id FROM users WHERE email = $1`
+	// err = db.QueryRow(getUser, email).Scan(&userId)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	var userId string
-	getUser := `SELECT user_id FROM users WHERE email = $1`
-	err = db.QueryRow(getUser, email).Scan(&userId)
-	if err != nil {
-		panic(err)
-	}
-
-	return db, userId
+	return db, ""
 }
 
 func GetEmail() string {
@@ -280,4 +286,37 @@ var DoneTask = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	_ = json.NewEncoder(w).Encode(updatedTask)
+})
+
+var GetBlogPosts = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var queryArticles = "SELECT title, content, date FROM posts LIMIT 10;"
+	var posts []BlogPost
+
+	db, _ := OpenConnection()
+	defer db.Close()
+	rows, err := db.Query(queryArticles)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		panic(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var post BlogPost
+		if err := rows.Scan(&post.Title, &post.Content, &post.Date); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			panic(err)
+		}
+		posts = append(posts, post)
+
+	}
+	if err = rows.Err(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		panic(err)
+	}
+	w.WriteHeader(http.StatusOK)
+
+	_ = json.NewEncoder(w).Encode(posts)
 })
