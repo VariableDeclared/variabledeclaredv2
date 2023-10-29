@@ -1,7 +1,7 @@
 import json
 import os
 import pathlib
-
+from base64 import b64decode
 
 class VDotComConfig:
     _epilogue: str
@@ -17,7 +17,7 @@ class VDotComConfig:
     
     @property
     def epilogue(self):
-        return self._epilogue
+        return b64decode(self._epilogue).decode('utf-8')
 
 
 

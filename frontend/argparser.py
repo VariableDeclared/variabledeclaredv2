@@ -1,5 +1,5 @@
 import argparse
-from base64 import b64decode
+
 
 class VDotComArg:
     def __init__(self, arg: str, action: str = None, default: str = None, **kwargs) -> None:
@@ -33,7 +33,7 @@ class VDotComArgParser:
         return cls._instances[cls]
 
     def __init__(self, args: list[VDotComArg] = None, extra_config: dict[str, str] = {}) -> None:
-        self._parser = argparse.ArgumentParser("VDotCom Frontend.", epilog=b64decode(extra_config.epilogue).decode('utf-8'))
+        self._parser = argparse.ArgumentParser("VDotCom Frontend.", epilog=extra_config.epilogue, formatter_class=argparse.RawDescriptionHelpFormatter)
         if args is not None:
             self._args = args
         self.setup_args()
