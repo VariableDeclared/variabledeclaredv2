@@ -30,6 +30,11 @@ type BlogPost struct {
 	Title   string `json:"title"`
 	Date    string `json:"date"`
 }
+type BlogDBFetcher interface {
+	OpenConnection(*sql.DB, string) (db *sql.DB, userId string)
+}
+
+type BlogFetcher struct{}
 
 func OpenConnection() (*sql.DB, string) {
 	err := godotenv.Load()

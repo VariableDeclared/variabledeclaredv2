@@ -1,6 +1,7 @@
 from flask import Flask, render_template
 import requests
 import os
+from argparser import VDotComArgParser
 
 app = Flask(__name__)
 
@@ -18,4 +19,6 @@ def index():
     return render_template('index.html', blog_posts=blog_posts)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080)
+    parser = VDotComArgParser().parser
+    args = parser.parse_args()
+    app.run(args.debug, port=args.port)
