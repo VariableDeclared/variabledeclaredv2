@@ -10,10 +10,10 @@ body {
     text-align: center;
 }
 
-h1 {
+h1, .header {
     background-color: #333;
     color: #fff;
-    padding: 10px;
+    padding: 1px;
     margin: 0;
 }
 
@@ -30,10 +30,14 @@ li {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-h2 {
+h2 .body {
     color: #333;
 }
 
 p {
     color: #666;
+}
+
+.footer {
+    background-color: #53cbe3
 }

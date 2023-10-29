@@ -2,22 +2,41 @@ import json
 import os
 import pathlib
 from base64 import b64decode
+from blog_app.blog import BlogApp
 
 class VDotComConfig:
     _epilogue: str
-
-    def __init__(self, epilogue: str) -> None:
+    _app = None
+    def __init__(self, epilogue: str, app: dict = None) -> None:
         self._epilogue = epilogue
+        if app:
+            self._app = BlogApp(
+                app.get('title', None),
+                app.get('subheading', None)
+            )
+        else:
+            self._app = BlogApp(
+                "My blog!",
+                "Welcome!"
+            )
     
     @staticmethod
     def load_json(loaded_json: dict[type,type]):
         # TODO: Scales terribly. Need to revamp whole deserialisation 
         # logic.
-        return VDotComConfig(loaded_json.get('epilogue', None))
+        app = loaded_json.get('app', None)
+        config = VDotComConfig(loaded_json.get('epilogue', ''))
+        if app:
+            config = VDotComConfig(loaded_json.get('epilogue', ''), app=app)
+        return config
+
     
     @property
-    def epilogue(self):
+    def epilogue(self) -> str:
         return b64decode(self._epilogue).decode('utf-8')
+    @property
+    def app(self) -> BlogApp:
+        return self._app
 
 
 
