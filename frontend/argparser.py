@@ -40,7 +40,7 @@ class VDotComArgParser:
     
     def setup_args(self) -> None:
         for arg in self._args:
-            self._parser.add_argument(arg.arg, action=arg.action)
+            self._parser.add_argument(arg.arg, action=arg.action, default=arg.default)
     
     @property
     def parser(self) -> argparse.ArgumentParser:
