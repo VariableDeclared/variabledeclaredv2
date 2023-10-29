@@ -1,5 +1,5 @@
 import argparse
-import types
+from base64 import b64decode
 
 class VDotComArg:
     def __init__(self, arg: str, action: str = None, default: str = None, **kwargs) -> None:
@@ -26,13 +26,14 @@ class VDotComArgParser:
         VDotComArg("--debug", "store_true"),
         VDotComArg("--port", default="8080")
     ]
-    def __new__(cls):
-        if not hasattr(cls, 'instance'):
-            cls.instance = super(VDotComArgParser, cls).__new__(cls)
-        return cls.instance
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(VDotComArgParser, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
 
-    def __init__(self, args: list[VDotComArg] = None) -> None:
-        self._parser = argparse.ArgumentParser("VDotCom Frontend.")
+    def __init__(self, args: list[VDotComArg] = None, extra_config: dict[str, str] = {}) -> None:
+        self._parser = argparse.ArgumentParser("VDotCom Frontend.", epilog=b64decode(extra_config.epilogue).decode('utf-8'))
         if args is not None:
             self._args = args
         self.setup_args()

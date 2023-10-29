@@ -2,6 +2,10 @@ from flask import Flask, render_template
 import requests
 import os
 from argparser import VDotComArgParser
+from config.config import (
+    VDotComConfigLoader,
+    VDotComConfig
+)
 
 app = Flask(__name__)
 
@@ -19,6 +23,7 @@ def index():
     return render_template('index.html', blog_posts=blog_posts)
 
 if __name__ == '__main__':
-    parser = VDotComArgParser().parser
+    vdotcom_config: VDotComConfig = VDotComConfigLoader().config
+    parser = VDotComArgParser(extra_config=vdotcom_config).parser
     args = parser.parse_args()
     app.run(args.debug, port=args.port)
