@@ -1,7 +1,6 @@
 package backend
 
 import (
-	backend "backend/packages"
 	"testing"
 
 	"github.com/joho/godotenv"
@@ -10,6 +9,7 @@ import (
 type BlogDBFetcherMock struct{}
 
 func TestOpenConnection(t *testing.T) {
+	var fetcher = BlogFetcher{}
 	godotenv.Load(".testingenv")
-	backend.OpenConnection()
+	fetcher.OpenConnection()
 }

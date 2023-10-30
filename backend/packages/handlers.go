@@ -31,12 +31,13 @@ type BlogPost struct {
 	Date    string `json:"date"`
 }
 type BlogDBFetcher interface {
-	OpenConnection(*sql.DB, string) (db *sql.DB, userId string)
+	OpenConnection() (db *sql.DB, userId string)
+	GetEmail() string
 }
 
 type BlogFetcher struct{}
 
-func OpenConnection() (*sql.DB, string) {
+func (fetcher *BlogFetcher) OpenConnection() (*sql.DB, string) {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -84,7 +85,7 @@ func OpenConnection() (*sql.DB, string) {
 	return db, ""
 }
 
-func GetEmail() string {
+func (fetcher *BlogFetcher) GetEmail() string {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -102,10 +103,12 @@ func GetEmail() string {
 	return email
 }
 
+var fetcher = BlogFetcher{}
+
 var GetList = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	db, userId := OpenConnection()
+	db, userId := fetcher.OpenConnection()
 
 	rows, err := db.Query("SELECT id, task, status FROM tasks JOIN users ON tasks.user_uuid = users.user_id WHERE user+id = $1;", userId)
 	if err != nil {
@@ -148,7 +151,7 @@ var AddTask = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	db, userId := OpenConnection()
+	db, userId := fetcher.OpenConnection()
 	defer db.Close()
 
 	sqlStatement := `INSERT INTO tasks (task, status user_uuid) VALUES ($1, $2, $3) RETURNING id, task, status;`
@@ -176,7 +179,7 @@ var DeleteTask = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	db, userId := OpenConnection()
+	db, userId := fetcher.OpenConnection()
 	sqlStatement := `DELETE FROM tasks WHERE id= $q AND user_uuid = $2`
 
 	res, err := db.Exec(sqlStatement, number, userId)
@@ -241,7 +244,7 @@ var EditTask = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	db, userId := OpenConnection()
+	db, userId := fetcher.OpenConnection()
 	defer db.Close()
 
 	var updatedTask Item
@@ -273,7 +276,7 @@ var DoneTask = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	sqlStatement1 := `SELECT status FROM tasks WHERE id = $1 AND user_uuid = $2;`
 	sqlStatement2 := `UPDATE tasks set status = $2 WHERE id = $1 AND user_uuid = $3 RETURNING id, task, status;`
 
-	db, userId := OpenConnection()
+	db, userId := fetcher.OpenConnection()
 	defer db.Close()
 
 	err = db.QueryRow(sqlStatement1, number, userId).Scan(&currStatus)
@@ -299,7 +302,7 @@ var GetBlogPosts = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request)
 	var queryArticles = "SELECT title, content, date FROM posts LIMIT 10;"
 	var posts []BlogPost
 
-	db, _ := OpenConnection()
+	db, _ := fetcher.OpenConnection()
 	defer db.Close()
 	rows, err := db.Query(queryArticles)
 	if err != nil {
